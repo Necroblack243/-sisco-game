@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SISCO</title>
+<meta name="theme-color" content="#2f4bff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SISCO">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+:root{
+  box-sizing:border-box;
+  --bg:#eef1f8; --panel:#ffffff; --ink:#151a33; --muted:#5d6486; --line:#d5daea;
+  --accent:#2f4bff; --accent2:#5b73ff; --accent-ink:#ffffff; --gold:#ffb400; --gold-ink:#3a2a00; --gold-edge:#d99600;
+  --cross:#e5384d; --ok:#1f9d55; --cell:#f6f8fd; --cell-done:#e3e6f2; --edge:#c8cfe6; --shadow:0 6px 22px rgba(30,40,100,.10);
+  --glow:rgba(47,75,255,.16);
+  --font:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1226; --panel:#181e3f; --ink:#eef1ff; --muted:#9aa3cc; --line:#2a3364;
+    --accent:#6f86ff; --accent2:#8ea0ff; --accent-ink:#0b1030; --gold:#ffc226; --gold-ink:#3a2a00; --gold-edge:#e0a000;
+    --cross:#ff6277; --ok:#4cd68a; --cell:#212957; --cell-done:#141937; --edge:#10152f; --shadow:0 6px 22px rgba(0,0,0,.35);
+    --glow:rgba(111,134,255,.18);
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{min-height:100%;-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.4;
+  background:radial-gradient(900px 420px at 0% -8%,var(--glow),transparent 70%),radial-gradient(700px 380px at 100% 0%,rgba(255,180,0,.10),transparent 70%),var(--bg);
+  background-attachment:fixed}
+#app{max-width:560px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top,0px)) 14px calc(40px + env(safe-area-inset-bottom,0px))}
+h1{font-size:40px;line-height:1.05;margin:0 0 6px;font-weight:800;letter-spacing:.01em}
+h2{font-size:19px;margin:0 0 10px;font-weight:800}
+p{margin:0 0 12px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+button{font-family:inherit;font-size:16px;font-weight:800;border:0;border-radius:13px;padding:12px 18px;cursor:pointer;color:var(--accent-ink);
+  background:linear-gradient(180deg,var(--accent2),var(--accent));box-shadow:0 3px 0 rgba(0,0,0,.22);transition:transform .08s,box-shadow .08s,opacity .15s}
+button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+button.ghost:active:not(:disabled){transform:none;background:var(--cell)}
+button.gold{background:linear-gradient(180deg,#ffd04d,var(--gold));color:var(--gold-ink);box-shadow:0 3px 0 var(--gold-edge)}
+button.small{padding:7px 11px;font-size:13px;border-radius:10px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible,summary:focus-visible,.cell:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input{font-family:inherit;font-size:16px;padding:13px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--cell);color:var(--ink);width:100%}
+input::placeholder{color:var(--muted);opacity:.7}
+label{display:block;font-weight:700;margin:0 0 6px;font-size:14px}
+.field{margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.between{justify-content:space-between}
+.big{width:100%;font-size:18px;padding:15px}
+.tag{font-size:13px;color:var(--muted);font-weight:500}
+.center{text-align:center}
+.err{color:var(--cross);font-weight:700;min-height:20px;margin:0 0 8px;font-size:14px}
+
+/* top bar + logo */
+.top{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}
+.logo{display:flex;gap:4px}
+.lt{width:26px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:linear-gradient(180deg,#ffd04d,var(--gold));color:var(--gold-ink);box-shadow:0 2px 0 var(--gold-edge)}
+.hero{text-align:center;padding:26px 0 12px}
+.hero .logo{justify-content:center;gap:8px;margin-bottom:12px}
+.hero .lt{width:54px;height:64px;font-size:34px;border-radius:13px;box-shadow:0 4px 0 var(--gold-edge);animation:drop .6s cubic-bezier(.2,1.4,.4,1) both}
+.hero .lt:nth-child(2){animation-delay:.07s}.hero .lt:nth-child(3){animation-delay:.14s}.hero .lt:nth-child(4){animation-delay:.21s}.hero .lt:nth-child(5){animation-delay:.28s}
+@keyframes drop{from{transform:translateY(-26px) scale(.8);opacity:0}to{transform:none;opacity:1}}
+.hero p{font-size:17px;max-width:420px;margin:0 auto}
+.tabs{display:flex;gap:6px;background:var(--cell);border-radius:13px;padding:4px;margin-bottom:14px}
+.tabs button{flex:1;background:transparent;color:var(--muted);box-shadow:none;padding:10px}
+.tabs button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:16px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:52px;background:var(--cell);color:var(--ink);border:1.5px solid var(--line);box-shadow:none;padding:10px 12px}
+.seg button.on{background:linear-gradient(180deg,var(--accent2),var(--accent));color:var(--accent-ink);border-color:var(--accent)}
+.stats{display:flex;gap:8px;margin-top:10px}
+.stat{flex:1;background:var(--cell);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:24px;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted);font-weight:600}
+details{margin:6px 0 14px}
+summary{cursor:pointer;font-weight:700;color:var(--muted);padding:6px 2px}
+details p{margin:6px 2px 0;font-size:14px}
+
+/* lobby */
+.code{font-size:56px;font-weight:800;letter-spacing:.16em;color:var(--accent);line-height:1;margin:2px 0 6px;padding-left:.16em}
+.link{display:block;word-break:break-all;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;font-size:14px;color:var(--ink)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:var(--ok)}
+.dot.off{background:var(--line)}
+.plist .pl{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.plist .pl:last-child{border-bottom:0}
+.badge{font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:var(--cell);border:1px solid var(--line);margin-left:6px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0}
+.cell{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:13px;background:var(--cell);border:1.5px solid var(--line);box-shadow:0 3px 0 var(--edge);font-size:clamp(20px,6.6vw,32px);font-weight:800;color:var(--ink);padding:0;user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .08s}
+.cell.empty{border-style:dashed;background:transparent;box-shadow:none}
+.cell.tap{cursor:pointer}
+.cell.tap:hover{border-color:var(--accent)}
+.cell.tap:active{transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
+.cell.done{background:var(--cell-done);color:var(--muted);box-shadow:none}
+.cell.done::before,.cell.done::after{content:"";position:absolute;left:14%;right:14%;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--cross)}
+.cell.done::before{transform:rotate(45deg)}
+.cell.done::after{transform:rotate(-45deg)}
+.cell.line{background:linear-gradient(180deg,#ffd04d,var(--gold));color:var(--gold-ink);border-color:var(--gold);box-shadow:0 3px 0 var(--gold-edge)}
+.cell.line::before,.cell.line::after{background:var(--gold-ink);opacity:.5}
+.cell.just{animation:pop .5s ease}
+.cell.just::before{animation:draw1 .3s ease-out}
+.cell.just::after{animation:draw2 .3s .08s ease-out both}
+@keyframes draw1{from{transform:rotate(45deg) scaleX(0)}to{transform:rotate(45deg) scaleX(1)}}
+@keyframes draw2{from{transform:rotate(-45deg) scaleX(0)}to{transform:rotate(-45deg) scaleX(1)}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.16)}100%{transform:scale(1)}}
+
+.word{display:flex;gap:5px}
+.tile{width:32px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-size:21px;border:1.5px dashed var(--line);color:transparent}
+.tile.on{color:var(--gold-ink);background:linear-gradient(180deg,#ffd04d,var(--gold));border:1.5px solid var(--gold);box-shadow:0 2px 0 var(--gold-edge)}
+.tile.new{animation:pop .7s ease}
+.score{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.score:last-child{border-bottom:0}
+.score .nm{font-weight:800}
+.score.turn .nm::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent);margin-right:8px;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--glow)}50%{box-shadow:0 0 0 6px var(--glow)}}
+.banner{background:linear-gradient(180deg,var(--accent2),var(--accent));color:var(--accent-ink);border-radius:15px;padding:12px 14px;margin-bottom:12px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.banner small{display:block;font-weight:600;opacity:.95;margin-top:2px}
+.banner.gold{background:linear-gradient(180deg,#ffd04d,var(--gold));color:var(--gold-ink);box-shadow:0 3px 0 var(--gold-edge);animation:glow 1.6s infinite}
+@keyframes glow{0%,100%{filter:none}50%{filter:brightness(1.07)}}
+.banner.quiet{background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{min-width:30px;text-align:center;padding:4px 7px;border-radius:8px;background:var(--cell);border:1px solid var(--line);font-size:14px;font-weight:800}
+.chip.last{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.next{font-size:60px;font-weight:800;line-height:1;color:var(--accent)}
+.win .word{justify-content:center;margin:12px 0 4px}
+.win .tile{width:50px;height:60px;font-size:32px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-weight:700;max-width:90%;display:none;z-index:20;text-align:center}
+#conn{position:sticky;top:0;z-index:5;background:var(--gold);color:var(--gold-ink);font-weight:800;text-align:center;padding:6px;border-radius:10px;margin-bottom:10px;display:none}
+#cf{position:fixed;inset:0;pointer-events:none;z-index:30}
+a.btn{display:block;text-align:center;text-decoration:none;font-weight:800;border-radius:13px;padding:12px 18px;font-size:16px;color:#fff;background:linear-gradient(180deg,#34d16a,#1fae52);box-shadow:0 3px 0 rgba(0,0,0,.22)}
+a.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
+.lb .pl{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.lb .pl:last-child{border-bottom:0}
+.lb .rk{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:var(--cell);border:1px solid var(--line);flex:none}
+.lb .pl:nth-child(1) .rk{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.lb .pl.me{font-weight:800}
+.lb .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;background:var(--cell);border:1px solid var(--line);color:var(--ink)}
+@media (max-width:400px){.tile{width:28px;height:34px;font-size:18px;border-radius:8px}.word{gap:4px}.hero .lt{width:46px;height:56px;font-size:28px}.code{font-size:48px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="alert"></div>
+<script>
+(function(){
+var LETTERS=['S','I','S','C','O'];
+var LINES=[];
+for(var r=0;r<5;r++)LINES.push([0,1,2,3,4].map(function(c){return r*5+c}));
+for(var c=0;c<5;c++)LINES.push([0,1,2,3,4].map(function(r){return r*5+c}));
+LINES.push([0,6,12,18,24]);LINES.push([4,8,12,16,20]);
+
+var app=document.getElementById('app'),toast=document.getElementById('toast');
+var S=null,es=null,session=null,auth=null,local={board:null},reconnecting=false,deferred=null;
+var ui={tab:'login',level:'medium',bots:1,joinCode:'',muted:false,me:null};
+try{
+  session=JSON.parse(localStorage.getItem('sisco-session')||'null');
+  auth=JSON.parse(localStorage.getItem('sisco-auth')||'null');
+  ui.muted=localStorage.getItem('sisco-mute')==='1';
+  ui.level=localStorage.getItem('sisco-level')||'medium';
+  ui.bots=+localStorage.getItem('sisco-bots')||1;
+}catch(e){}
+var qs=new URLSearchParams(location.search);
+ui.joinCode=(qs.get('room')||'').toUpperCase().slice(0,4);
+
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function store(k,v){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v))}catch(e){}}
+function say(t){toast.textContent=t;toast.style.display='block';clearTimeout(say.t);say.t=setTimeout(function(){toast.style.display='none'},3600)}
+function shuffled(){var a=[];for(var i=1;i<=25;i++)a.push(i);for(var j=24;j>0;j--){var k=Math.floor(Math.random()*(j+1));var t=a[j];a[j]=a[k];a[k]=t}return a}
+
+function post(path,body){
+  return fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})})
+    .then(function(r){return r.json().then(function(d){if(!r.ok){var er=new Error(d.error||'Something went wrong');er.status=r.status;throw er}return d})});
+}
+function act(type,extra){
+  var b=Object.assign({room:session.room,pid:session.pid,token:session.token,type:type},extra||{});
+  return post('action',b).then(function(d){if(polling)pollNow();return d}).catch(function(e){say(e.message)});
+}
+
+/* ---------- sound + celebration ---------- */
+var ac=null;
+function tone(f,d,type,vol,delay){
+  if(ui.muted)return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(delay||0);
+    o.type=type||'sine';o.frequency.value=f;o.connect(g);g.connect(ac.destination);
+    g.gain.setValueAtTime(vol||.07,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.start(t);o.stop(t+d+.02);
+  }catch(e){}
+}
+function sfx(prev,cur){
+  if(cur.phase==='play'){
+    if(prev&&cur.called.length>prev.called.length)tone(420+(cur.last%12)*25,.12,'triangle');
+    var f=cur.fresh&&cur.fresh[cur.you];
+    if(f&&(!prev||cur.called.length>prev.called.length)){[660,880,1100].forEach(function(n,i){tone(n,.18,'sine',.08,i*.09)})}
+    if(cur.turnId===cur.you&&(!prev||prev.turnId!==cur.you||prev.phase!=='play')){
+      tone(740,.1,'sine',.08);tone(988,.14,'sine',.08,.1);
+      try{if(navigator.vibrate)navigator.vibrate(80)}catch(e){}
+    }
+  }
+}
+function celebrate(){
+  var won=S.winners.indexOf(S.you)>-1;
+  if(won){[523,659,784,1047].forEach(function(n,i){tone(n,.25,'triangle',.09,i*.12)});confetti()}
+  else{tone(330,.25,'sine',.06);tone(262,.35,'sine',.06,.2)}
+}
+function confetti(){
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var cv=document.createElement('canvas');cv.id='cf';document.body.appendChild(cv);
+  var W=cv.width=innerWidth,H=cv.height=innerHeight,x=cv.getContext('2d');
+  var cols=['#ffb400','#2f4bff','#e5384d','#1f9d55','#ffffff','#8ea0ff'],ps=[];
+  for(var i=0;i<140;i++)ps.push({x:W/2+(Math.random()-.5)*80,y:H*.35,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,s:5+Math.random()*7,c:cols[i%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.4});
+  var start=performance.now();
+  (function tick(now){
+    var t=now-start;x.clearRect(0,0,W,H);
+    ps.forEach(function(p){p.vy+=.3;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6);x.restore()});
+    if(t<3800)requestAnimationFrame(tick);else cv.remove();
+  })(start);
+}
+
+/* ---------- connection ---------- */
+var poller=null,gotState=false,fallbackTimer=null,polling=false;
+function onState(data){
+  var prev=S;S=data;reconnecting=false;gotState=true;
+  if(S.phase!=='place')local.board=null;
+  sfx(prev,S);
+  render();
+  if(S.phase==='end'&&(!prev||prev.phase!=='end'))celebrate();
+}
+function stopLive(){
+  if(es){es.close();es=null}
+  clearInterval(poller);poller=null;clearTimeout(fallbackTimer);polling=false;
+}
+function pollNow(){
+  if(!session)return;
+  post('state',{room:session.room,pid:session.pid,token:session.token,v:S?S.v:-1}).then(function(d){
+    if(!session)return;
+    reconnecting=false;showConn();
+    if(!d.same)onState(d);
+  }).catch(function(e){
+    if(e.status===404||e.status===401){leaveLocal('That room is no longer available.')}
+    else{reconnecting=true;showConn()}
+  });
+}
+function startPolling(){
+  if(polling||!session)return;
+  polling=true;
+  if(es){es.close();es=null}
+  pollNow();poller=setInterval(pollNow,1000);
+}
+function connect(){
+  stopLive();gotState=false;
+  es=new EventSource('/events?room='+encodeURIComponent(session.room)+'&pid='+session.pid+'&token='+session.token);
+  es.addEventListener('state',function(e){onState(JSON.parse(e.data))});
+  es.addEventListener('kicked',function(){leaveLocal('The host removed you from the room.')});
+  es.onerror=function(){
+    if(es&&es.readyState===2){leaveLocal('That room is no longer available.')}
+    else{reconnecting=true;showConn()}
+  };
+  /* some networks and tunnels hold back live updates; if nothing arrives quickly, switch to checking every second */
+  fallbackTimer=setTimeout(function(){if(!gotState)startPolling()},2000);
+}
+function leaveLocal(text){
+  stopLive();session=null;S=null;store('sisco-session',null);
+  if(text)say(text);
+  render();
+}
+function showConn(){var el=document.getElementById('conn');if(el)el.style.display=reconnecting?'block':'none'}
+
+/* ---------- shared pieces ---------- */
+function logoHtml(){return '<div class="logo" aria-label="SISCO">'+LETTERS.map(function(l){return '<div class="lt">'+l+'</div>'}).join('')+'</div>'}
+function topbar(extra,noLogo){
+  return '<div id="conn">Reconnecting...</div><div class="top">'+(noLogo?'<span></span>':logoHtml())+'<div class="row">'+(extra||'')+'<button class="ghost small" id="snd" aria-label="Toggle sound">'+(ui.muted?'Sound off':'Sound on')+'</button></div></div>';
+}
+function wireCommon(){
+  var s=document.getElementById('snd');
+  if(s)s.onclick=function(){ui.muted=!ui.muted;store('sisco-mute',ui.muted?'1':'0');s.textContent=ui.muted?'Sound off':'Sound on';if(!ui.muted)tone(600,.1)};
+  showConn();
+}
+function seg(id,opts,val){
+  return '<div class="seg" id="'+id+'">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'" class="'+(String(val)===String(o[0])?'on':'')+'" aria-pressed="'+(String(val)===String(o[0]))+'">'+o[1]+'</button>'}).join('')+'</div>';
+}
+function wireSeg(id,cb){
+  var el=document.getElementById(id);if(!el)return;
+  el.querySelectorAll('button').forEach(function(b){b.onclick=function(){cb(b.dataset.v)}});
+}
+
+/* ---------- welcome / login ---------- */
+function renderWelcome(){
+  var login=ui.tab==='login';
+  var h='<div class="hero">'+logoHtml()+'<p>The number-grid race. Cross out lines, unlock letters, and spell SISCO before everyone else.</p></div>';
+  if(ui.joinCode)h+='<div class="banner quiet center">You were invited to room '+esc(ui.joinCode)+'. Log in or play as a guest to join.</div>';
+  h+='<div class="panel"><div class="tabs" role="tablist"><button type="button" class="'+(login?'on':'')+'" data-t="login">Log in</button><button type="button" class="'+(login?'':'on')+'" data-t="signup">Create account</button></div>'+
+    '<form id="af" novalidate><div class="field"><label for="un">Username</label><input id="un" maxlength="14" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. chidi_09"></div>'+
+    '<div class="field"><label for="pw">Password</label><input id="pw" type="password" maxlength="64" autocomplete="'+(login?'current-password':'new-password')+'" placeholder="'+(login?'Your password':'At least 6 characters')+'"></div>'+
+    '<div class="err" id="aerr" role="alert"></div><button class="big" type="submit">'+(login?'Log in':'Create account')+'</button></form>'+
+    '<div class="or">or</div>'+
+    '<div class="field"><label for="gn">Play as a guest</label><input id="gn" maxlength="14" autocomplete="nickname" placeholder="Your name" value="'+esc((auth&&auth.guest&&auth.name)||'')+'"></div>'+
+    '<button class="ghost big" id="guest">Continue as guest</button></div>'+
+    '<p class="tag center">Accounts keep your win count. Guests can play everything except saved stats.</p>';
+  app.innerHTML=topbar('',true)+h;wireCommon();
+  app.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){ui.tab=b.dataset.t;renderWelcome()}});
+  document.getElementById('af').onsubmit=function(e){
+    e.preventDefault();
+    var u=document.getElementById('un').value.trim(),p=document.getElementById('pw').value,er=document.getElementById('aerr');
+    if(!u||!p){er.textContent='Enter your username and password.';return}
+    er.textContent='';
+    post(login?'login':'register',{username:u,password:p}).then(function(d){
+      auth={token:d.token,name:d.user.name,guest:false};ui.me=d.user;store('sisco-auth',auth);render();
+    }).catch(function(x){er.textContent=x.message});
+  };
+  document.getElementById('guest').onclick=function(){
+    var n=document.getElementById('gn').value.trim();
+    if(!n){say('Type a name to play as a guest.');document.getElementById('gn').focus();return}
+    auth={name:n.slice(0,14),guest:true};store('sisco-auth',auth);render();
+  };
+}
+
+/* ---------- menu ---------- */
+function authBody(){return auth.guest?{name:auth.name}:{auth:auth.token,name:auth.name}}
+function enter(promise){
+  return promise.then(function(d){session={room:d.room,pid:d.pid,token:d.token};store('sisco-session',session);S=null;connect();render()}).catch(function(e){say(e.message)});
+}
+function renderMenu(){
+  var u=ui.me;
+  var h=topbar('<button class="ghost small" id="logout">'+(auth.guest?'Exit':'Log out')+'</button>');
+  h+='<div class="panel"><div class="tag">'+(auth.guest?'Playing as guest':'Signed in')+'</div><h1 style="font-size:30px;margin:2px 0 0">Hi, '+esc(auth.name)+'</h1>';
+  if(!auth.guest&&u){
+    var rate=u.played?Math.round(u.wins*100/u.played):0;
+    h+='<div class="stats"><div class="stat"><b>'+u.played+'</b><span>Games</span></div><div class="stat"><b>'+u.wins+'</b><span>Wins</span></div><div class="stat"><b>'+rate+'%</b><span>Win rate</span></div></div>';
+  }else if(auth.guest)h+='<p class="tag" style="margin:6px 0 0">Log in to save your wins.</p>';
+  h+='</div>';
+  h+='<div class="panel"><h2>Play vs computer</h2><label>Opponents</label>'+seg('sbots',[[1,'1'],[2,'2'],[3,'3'],[4,'4']],ui.bots)+
+    '<label style="margin-top:12px">Difficulty</label>'+seg('slevel',[['easy','Easy'],['medium','Medium'],['hard','Hard']],ui.level)+
+    '<button class="big gold" id="solo" style="margin-top:14px">Start game</button></div>';
+  h+='<div class="panel"><h2>Play with friends</h2><p>Make a room and share the code. Friends can be on any phone or computer.</p><button class="big" id="create">Create room</button>'+
+    '<div class="or">or join one</div><div class="row" style="flex-wrap:nowrap"><input id="rc" maxlength="4" autocapitalize="characters" autocomplete="off" aria-label="Room code" placeholder="CODE" value="'+esc(ui.joinCode)+'" style="text-transform:uppercase;letter-spacing:.25em;font-weight:800;text-align:center"><button id="join">Join</button></div></div>';
+  h+='<div class="panel lb"><h2>Leaderboard</h2><div id="lb"><p class="tag">Loading...</p></div></div>';
+  if(deferred)h+='<button class="ghost big" id="install" style="margin-bottom:10px">Install SISCO as an app</button>';
+  h+='<details><summary>How to play</summary><p>Each player arranges the numbers 1 to 25 on a 5 by 5 grid. Players take turns calling a number from their own grid, and it is crossed out for everyone. Every completed row, column or diagonal unlocks the next letter of S, I, S, C, O. First to spell SISCO wins.</p></details>'+
+    '<details><summary>Install on your phone or PC</summary><p>Android (Chrome): open the browser menu and tap Install app or Add to Home screen. Windows (Chrome or Edge): click the install icon in the address bar. Installing needs a secure (https) link, which the internet link provides.</p></details>';
+  app.innerHTML=h;wireCommon();
+  wireSeg('sbots',function(v){ui.bots=+v;store('sisco-bots',String(v));renderMenu()});
+  wireSeg('slevel',function(v){ui.level=v;store('sisco-level',v);renderMenu()});
+  document.getElementById('logout').onclick=function(){
+    if(!auth.guest&&auth.token)post('logout',{auth:auth.token}).catch(function(){});
+    auth=null;ui.me=null;ui.tab='login';store('sisco-auth',null);render();
+  };
+  document.getElementById('solo').onclick=function(){enter(post('create',Object.assign(authBody(),{solo:true,bots:ui.bots,level:ui.level})))};
+  document.getElementById('create').onclick=function(){enter(post('create',authBody()))};
+  document.getElementById('join').onclick=function(){
+    var code=document.getElementById('rc').value.trim().toUpperCase();
+    if(code.length!==4){say('Room codes have 4 letters.');return}
+    ui.joinCode='';enter(post('join',Object.assign(authBody(),{room:code})));
+  };
+  var ins=document.getElementById('install');
+  if(ins)ins.onclick=function(){deferred.prompt();deferred.userChoice.then(function(){deferred=null;renderMenu()})};
+  refreshMe();loadLeaderboard();
+}
+function loadLeaderboard(){
+  post('leaderboard',{}).then(function(d){
+    var box=document.getElementById('lb');if(!box)return;
+    if(!d.top.length){box.innerHTML='<p class="tag">No wins recorded yet. Log in and win a game to be the first.</p>';return}
+    box.innerHTML=d.top.map(function(u,i){
+      var me=auth&&!auth.guest&&u.name.toLowerCase()===String(auth.name).toLowerCase();
+      return '<div class="pl'+(me?' me':'')+'"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(u.name)+(me?' (you)':'')+'</span><span class="tag">'+u.wins+' win'+(u.wins===1?'':'s')+' / '+u.played+'</span></div>';
+    }).join('');
+  }).catch(function(){var box=document.getElementById('lb');if(box)box.innerHTML='<p class="tag">Leaderboard unavailable right now.</p>'});
+}
+function refreshMe(){
+  if(!auth||auth.guest||!auth.token)return;
+  post('me',{auth:auth.token}).then(function(d){
+    var changed=!ui.me||ui.me.wins!==d.user.wins||ui.me.played!==d.user.played;
+    ui.me=d.user;if(changed&&!session&&auth)renderMenu();
+  }).catch(function(){auth=null;ui.me=null;store('sisco-auth',null);render()});
+}
+
+/* ---------- lobby ---------- */
+function isHost(){return S.hostId===S.you}
+function playerName(id){var p=S.players.filter(function(x){return x.id===id})[0];return p?p.name:'Someone'}
+function renderLobby(){
+  var url=location.origin+'/?room='+S.code;
+  var h=topbar();
+  h+='<div class="panel center"><div class="tag">Room code</div><div class="code">'+esc(S.code)+'</div><p>Friends enter this code, or open the link on their phone or computer.</p><div id="links"></div>'+
+    '<div class="row" style="justify-content:center"><a class="btn" id="wa" target="_blank" rel="noopener" style="flex:1;min-width:170px">Invite on WhatsApp</a><button class="ghost" id="copy">Copy link</button></div></div>';
+  h+='<div class="panel plist"><h2>Players ('+S.players.length+' of 5)</h2>';
+  S.players.forEach(function(p){
+    h+='<div class="pl"><div><span class="dot'+(p.connected?'':' off')+'"></span>'+esc(p.name)+(p.id===S.you?'<span class="badge">you</span>':'')+(p.id===S.hostId?'<span class="badge">host</span>':'')+(p.bot?'<span class="badge">computer '+esc(p.level||'')+'</span>':'')+'</div>';
+    if(isHost()&&p.id!==S.you)h+='<button class="ghost small" data-rm="'+p.id+'">Remove</button>';
+    h+='</div>';
+  });
+  h+='</div>';
+  if(isHost()){
+    h+='<div class="panel"><label>Rounds in this match</label>'+seg('srounds',[[1,'1'],[3,'3'],[5,'5'],[7,'7'],[10,'10']],S.rounds)+
+      '<p class="tag" style="margin:8px 0 0">'+(S.rounds===1?'One game, first to spell SISCO wins.':'Win the most rounds to be champion.')+'</p></div>';
+    h+='<div class="panel"><label>Computer difficulty</label>'+seg('slevel',[['easy','Easy'],['medium','Medium'],['hard','Hard']],ui.level)+
+      '<button class="ghost big" id="bot" style="margin-top:12px"'+(S.players.length>=5?' disabled':'')+'>Add computer player</button></div>';
+    h+='<button class="big gold" id="start"'+(S.players.length<2?' disabled':'')+'>Start game</button>';
+    if(S.players.length<2)h+='<p class="tag center" style="margin-top:8px">Waiting for at least one more player.</p>';
+  }else h+='<div class="panel center"><span class="pill">'+(S.rounds===1?'Single game':S.rounds+' rounds')+'</span><p style="margin:8px 0 0">Waiting for '+esc(playerName(S.hostId))+' to start the game.</p></div>';
+  h+='<div class="center" style="margin-top:16px"><button class="ghost small" id="leave">Leave room</button></div>';
+  app.innerHTML=h;wireCommon();fillLinks(url);setInvite(url);
+  wireSeg('srounds',function(v){act('setRounds',{rounds:+v})});
+  wireSeg('slevel',function(v){ui.level=v;store('sisco-level',v);renderLobby()});
+  document.getElementById('copy').onclick=function(){copyText(url)};
+  var b=document.getElementById('bot');if(b)b.onclick=function(){act('addBot',{level:ui.level})};
+  var st=document.getElementById('start');if(st)st.onclick=function(){act('start')};
+  app.querySelectorAll('[data-rm]').forEach(function(x){x.onclick=function(){act('remove',{target:x.dataset.rm})}});
+  document.getElementById('leave').onclick=function(){act('leave').then(function(){leaveLocal()})};
+}
+function setInvite(url){
+  var a=document.getElementById('wa');if(!a||!S)return;
+  var base=inviteBase||location.origin;
+  var text='Join my SISCO game! Open '+base+'/?room='+S.code+' and use room code '+S.code;
+  a.href='https://wa.me/?text='+encodeURIComponent(text);
+}
+var inviteBase='';
+function fillLinks(url){
+  var box=document.getElementById('links');if(!box)return;
+  var host=location.hostname,isLocal=host==='localhost'||host==='127.0.0.1';
+  function show(urls){box.innerHTML=urls.map(function(u){return '<span class="link">'+esc(u)+'</span>'}).join('')}
+  show([url]);
+  if(isLocal)fetch('/api/info').then(function(r){return r.json()}).then(function(d){
+    if(d.urls&&d.urls.length&&S){inviteBase=d.urls[0];show(d.urls.map(function(u){return u+'/?room='+S.code}));setInvite()}
+  }).catch(function(){});
+}
+function copyText(t){
+  function fb(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');say('Link copied')}catch(e){say('Copy the link shown above')}document.body.removeChild(ta)}
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(function(){say('Link copied')},fb);else fb();
+}
+
+/* ---------- arranging ---------- */
+function renderPlace(){
+  var me=S.players.filter(function(p){return p.id===S.you})[0];
+  var h=topbar();
+  if(me.ready){
+    h+='<div class="panel"><h2>Grid locked in'+(S.rounds>1?' <span class="pill" style="vertical-align:middle">Round '+S.round+' of '+S.rounds+'</span>':'')+'</h2><p>Waiting for the others to finish arranging.</p>';
+    S.players.forEach(function(p){h+='<div class="score"><span class="nm">'+esc(p.name)+(p.id===S.you?' (you)':'')+'</span><span class="tag">'+(p.ready?'Ready':'Arranging...')+'</span></div>'});
+    app.innerHTML=h+'</div>';wireCommon();return;
+  }
+  if(!local.board)local.board=new Array(25).fill(null);
+  var b=local.board;
+  var placed=b.filter(function(x){return x!==null}).length,next=placed+1;
+  h+='<h2>Arrange your grid'+(S.rounds>1?' <span class="pill" style="vertical-align:middle">Round '+S.round+' of '+S.rounds+'</span>':'')+'</h2><div class="panel center">';
+  if(placed<25)h+='<div class="tag">Tap a square to place</div><div class="next">'+next+'</div>';
+  else h+='<div class="next" style="font-size:30px">Grid complete</div>';
+  h+='<div class="board">';
+  for(var i=0;i<25;i++){
+    var v=b[i];
+    h+='<div class="cell'+(v===null?' empty tap':'')+'" data-i="'+i+'"'+(v===null?' role="button" tabindex="0" aria-label="Empty square, place '+next+'"':'')+'>'+(v===null?'':v)+'</div>';
+  }
+  h+='</div><div class="row" style="justify-content:center"><button class="ghost" id="shuf">Shuffle all</button><button class="ghost" id="undo"'+(placed?'':' disabled')+'>Undo</button><button class="ghost" id="clr"'+(placed?'':' disabled')+'>Clear</button></div></div>';
+  h+='<button class="big gold" id="ready"'+(placed<25?' disabled':'')+'>I am ready</button>';
+  var ready=S.players.filter(function(p){return p.ready}).length;
+  h+='<p class="tag center" style="margin-top:8px">'+ready+' of '+S.players.length+' players ready</p>';
+  app.innerHTML=h;wireCommon();
+  function put(i){if(b[i]!==null||placed>=25)return;b[i]=next;tone(500+next*10,.06,'triangle',.05);renderPlace()}
+  app.querySelectorAll('.cell.empty').forEach(function(c){
+    c.onclick=function(){put(+c.dataset.i)};
+    c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();put(+c.dataset.i)}};
+  });
+  document.getElementById('shuf').onclick=function(){local.board=shuffled();renderPlace()};
+  document.getElementById('undo').onclick=function(){var idx=b.indexOf(placed);if(idx>-1)b[idx]=null;renderPlace()};
+  document.getElementById('clr').onclick=function(){local.board=null;renderPlace()};
+  document.getElementById('ready').onclick=function(){act('submitBoard',{board:local.board})};
+}
+
+/* ---------- play ---------- */
+function inLineMap(){var m={};LINES.forEach(function(l){if(l.every(function(i){return S.crossed[i]}))l.forEach(function(i){m[i]=1})});return m}
+function scoreboard(){
+  var h='<div class="panel"><h2>Progress</h2>';
+  S.players.forEach(function(p){
+    var c=Math.min(p.lines,5);
+    h+='<div class="score'+(p.id===S.turnId&&S.phase==='play'?' turn':'')+'"><div><div class="nm">'+esc(p.name)+(p.id===S.you?' (you)':'')+'</div><div class="tag">'+p.lines+' line'+(p.lines===1?'':'s')+(S.rounds>1?' | '+(S.scores[p.id]||0)+' round win'+((S.scores[p.id]||0)===1?'':'s'):'')+(p.bot?' | '+esc(p.level):'')+(p.connected?'':' | offline')+'</div></div><div class="word">';
+    for(var k=0;k<5;k++){
+      var f=S.fresh&&S.fresh[p.id];var isNew=f&&k>=f.from&&k<f.to;
+      h+='<div class="tile'+(k<c?' on':'')+(isNew?' new':'')+'">'+LETTERS[k]+'</div>';
+    }
+    h+='</div></div>';
+  });
+  return h+'</div>';
+}
+function renderPlay(){
+  var my=S.turnId===S.you;
+  var h=topbar((S.rounds>1?'<span class="pill">Round '+S.round+' of '+S.rounds+'</span>':'<span class="tag">Room '+esc(S.code)+'</span>'));
+  if(S.last!==null)h+='<div class="banner" role="status">'+esc(playerName(S.lastBy))+' called '+S.last+(S.notes.length?'<small>'+S.notes.map(esc).join(' | ')+'</small>':'')+'</div>';
+  if(my)h+='<div class="banner gold">Your turn. Tap a number on your grid to call it.</div>';
+  else h+='<div class="banner quiet">Waiting for '+esc(playerName(S.turnId))+' to call a number...</div>';
+  var dl=inLineMap();
+  var mine=S.players.filter(function(p){return p.id===S.you})[0];
+  h+='<div class="panel"><div class="row between"><strong>Your grid</strong><span class="tag">'+Math.min(mine.lines,5)+' of 5 lines</span></div><div class="board">';
+  for(var i=0;i<25;i++){
+    var n=S.board[i],done=S.crossed[i],can=my&&!done;
+    h+='<div class="cell'+(done?' done':'')+(dl[i]?' line':'')+(can?' tap':'')+(S.last===n&&done?' just':'')+'" data-n="'+n+'"'+(can?' role="button" tabindex="0" aria-label="Call '+n+'"':'')+'>'+n+'</div>';
+  }
+  h+='</div></div>'+scoreboard();
+  if(S.called.length){
+    h+='<div class="panel"><h2>Called so far</h2><div class="chips">';
+    S.called.forEach(function(n,i){h+='<span class="chip'+(i===S.called.length-1?' last':'')+'">'+n+'</span>'});
+    h+='</div></div>';
+  }
+  h+='<div class="center"><button class="ghost small" id="leave">Leave game</button></div>';
+  app.innerHTML=h;wireCommon();
+  if(my)app.querySelectorAll('.cell.tap').forEach(function(c){
+    function go(){act('call',{n:+c.dataset.n})}
+    c.onclick=go;
+    c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}};
+  });
+  document.getElementById('leave').onclick=function(){if(confirm('Leave this game? You can rejoin by reopening the page.'))leaveLocal()};
+}
+function standings(){
+  var h='<div class="panel"><h2>Match score</h2>';
+  S.players.slice().sort(function(a,b){return (S.scores[b.id]||0)-(S.scores[a.id]||0)}).forEach(function(p){
+    h+='<div class="score"><span class="nm">'+esc(p.name)+(p.id===S.you?' (you)':'')+'</span><span class="pill">'+(S.scores[p.id]||0)+' / '+S.rounds+'</span></div>';
+  });
+  return h+'</div>';
+}
+function renderEnd(){
+  var multi=S.rounds>1;
+  var names=S.winners.map(function(id){return esc(playerName(id))});
+  var won=S.winners.indexOf(S.you)>-1;
+  var h=topbar(multi?'<span class="pill">Round '+S.round+' of '+S.rounds+'</span>':'');
+  var hostP=S.players.filter(function(p){return p.id===S.hostId})[0];
+  var canLead=isHost()||(hostP&&!hostP.connected);
+  if(multi&&S.seriesOver){
+    var champs=S.champions.map(function(id){return esc(playerName(id))});
+    var iWon=S.champions.indexOf(S.you)>-1;
+    h+='<div class="panel win center"><div class="tag">'+(S.champions.length>1?'The match is a tie':'Match champion')+'</div><h1 style="font-size:34px">'+champs.join(' and ')+'</h1><div class="word">';
+    LETTERS.forEach(function(l){h+='<div class="tile on new">'+l+'</div>'});
+    h+='</div><p style="margin-top:12px">'+(iWon?'You won the match':'Match over')+' after '+S.rounds+' rounds.</p>';
+    h+=canLead?'<button class="gold" id="again">Play again</button>':'<p class="tag">Waiting for the host to start another match.</p>';
+    h+='</div>'+standings();
+  }else{
+    h+='<div class="panel win center"><div class="tag">'+(multi?'Round '+S.round+' ':'')+(S.winners.length>1?'is a tie':(multi?'winner':'We have a winner'))+'</div><h1 style="font-size:34px">'+names.join(' and ')+'</h1><div class="word">';
+    LETTERS.forEach(function(l){h+='<div class="tile on new">'+l+'</div>'});
+    h+='</div><p style="margin-top:12px">'+(won?'You spelled SISCO':'SISCO was spelled')+' after '+S.called.length+' calls.</p>';
+    if(multi)h+=canLead?'<button class="gold" id="next">Next round</button>':'<p class="tag">Waiting for the host to start round '+(S.round+1)+'.</p>';
+    else h+=canLead?'<button class="gold" id="again">Play again</button>':'<p class="tag">Waiting for the host to start another round.</p>';
+    h+='</div>'+(multi?standings():'');
+  }
+  h+=scoreboard()+'<div class="center"><button class="ghost small" id="leave">Back to menu</button></div>';
+  app.innerHTML=h;wireCommon();
+  var a=document.getElementById('again');if(a)a.onclick=function(){act('again')};
+  var n=document.getElementById('next');if(n)n.onclick=function(){act('next')};
+  document.getElementById('leave').onclick=function(){act('leave').then(function(){leaveLocal()})};
+}
+
+/* ---------- router ---------- */
+function render(){
+  var cf=document.getElementById('cf');if(cf&&(!S||S.phase!=='end'))cf.remove();
+  if(!auth){renderWelcome();return}
+  if(!session){renderMenu();return}
+  if(!S){app.innerHTML=topbar()+'<div class="panel center"><p>Connecting...</p></div>';wireCommon();return}
+  window.scrollTo(0,0);
+  if(S.phase==='lobby')renderLobby();
+  else if(S.phase==='place')renderPlace();
+  else if(S.phase==='play')renderPlay();
+  else renderEnd();
+}
+
+/* ---------- boot ---------- */
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;if(auth&&!session)renderMenu()});
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})});
+}
+if(session&&auth){
+  post('rejoin',session).then(function(){connect();render()}).catch(function(){session=null;store('sisco-session',null);render()});
+  render();
+}else{session=null;render()}
+})();
+</script>
+</body>
+</html>

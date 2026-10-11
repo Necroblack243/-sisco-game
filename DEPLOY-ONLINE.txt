@@ -1,0 +1,38 @@
+GET A PERMANENT LINK (free) - SISCO on Render
+==============================================
+Result: a link like https://sisco-game.onrender.com that works any time, even when your PC is off.
+Screens on these websites change over time, so a button may look a little different from what is written here.
+
+PART A - Put the files on GitHub (free account)
+1. Go to github.com and sign up.
+2. Click the + at the top right, then New repository. Name it sisco-game. Choose Public. Click Create repository.
+3. On the next page click the link "uploading an existing file".
+4. Open the extracted sisco-online folder on your PC. Select ALL the files inside it
+   (server.js, index.html, package.json, sw.js, manifest.webmanifest, the icon files, README, etc.)
+   and drag them into the GitHub page. Drag the files, not the folder. Do not upload a folder called "data".
+5. Click Commit changes.
+
+PART B - Make the link on Render (free)
+1. Go to render.com and sign up with your GitHub account.
+2. Click New, then Web Service, then choose your sisco-game repository.
+3. Fill in:
+     Language:        Node
+     Build Command:   npm install
+     Start Command:   node server.js
+     Instance Type:   Free
+4. Click Create Web Service. Wait a few minutes until it says Live.
+5. Your link is shown at the top of the page. Send it to friends. Done.
+
+Things to know about the free plan
+- If nobody uses the game for about 15 minutes, Render puts it to sleep. The next visit takes about a minute to wake up.
+  Before a game night, open the link yourself a minute early.
+- Games in progress are forgotten when it sleeps or restarts. Accounts are kept only if you do Part C.
+
+PART C (optional) - Keep accounts and the leaderboard forever
+Free hosts wipe saved files when they restart, so accounts would disappear. A free cloud store fixes that.
+1. Go to upstash.com and sign up. Create a Redis database (choose the free plan).
+2. On the database page find the REST API section. Copy the URL and the token.
+3. In Render open your service, go to Environment, and add two variables:
+     UPSTASH_REDIS_REST_URL     = (the URL you copied)
+     UPSTASH_REDIS_REST_TOKEN   = (the token you copied)
+4. Save. Render restarts the service. In its Logs you should see: "Accounts are stored in cloud storage."
