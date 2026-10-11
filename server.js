@@ -90,7 +90,7 @@ const lineCount = p => LINES.filter(l => l.every(i => p.crossed[i])).length;
 const cleanName = s => String(s || '').replace(/[<>&"']/g, '').trim().slice(0, 14);
 
 function makePlayer(name, bot, level, userKey) {
-  return { id: rid(4), token: rid(16), name, bot: !!bot, level: bot ? (level || 'medium') : null, userKey: userKey || null, board: null, crossed: new Array(25).fill(false), ready: false, connected: false, discAt: 0 };
+  return { id: rid(4), token: rid(16), name, bot: !!bot, level: bot ? (level || 'medium') : null, userKey: userKey || null, board: null, crossed: new Array(25).fill(false), ready: false, connected: false, discAt: 0, voice: false, muted: false, inbox: [] };
 }
 function uniqueName(room, base) {
   let name = base || 'Player', n = 2;
@@ -105,7 +105,7 @@ function view(room, pid) {
   return {
     code: room.code, v: room.version || 0, rounds: room.rounds, round: room.round, scores: room.scores, seriesOver: room.seriesOver, champions: room.champions, phase: room.phase, hostId: room.hostId, you: pid,
     turn: room.turn, turnId: cur ? cur.id : null,
-    players: room.players.map(p => ({ id: p.id, name: p.name, bot: p.bot, level: p.level, member: !!p.userKey, connected: p.bot || p.connected, ready: p.ready, lines: lineCount(p) })),
+    players: room.players.map(p => ({ id: p.id, name: p.name, bot: p.bot, level: p.level, member: !!p.userKey, voice: !!p.voice, muted: !!p.muted, connected: p.bot || p.connected, ready: p.ready, lines: lineCount(p) })),
     board: me ? me.board : null, crossed: me ? me.crossed : null,
     called: room.called, last: room.last, lastBy: room.lastBy, notes: room.notes,
     winners: room.winners, fresh: room.fresh
@@ -255,6 +255,24 @@ const handlers = {
     if (b.v === room.version) return { same: true };
     return view(room, p.id);
   },
+  ice() {
+    const servers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+    const turn = (process.env.TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
+    if (turn.length) servers.push({ urls: turn, username: process.env.TURN_USERNAME || '', credential: process.env.TURN_CREDENTIAL || '' });
+    return { iceServers: servers };
+  },
+  signal(b) {
+    const room = getRoom(b.room); const me = auth(room, b.pid, b.token);
+    const to = room.players.find(p => p.id === b.to && !p.bot);
+    if (!to || !me.voice || !to.voice) return { ok: false };
+    if (to.inbox.length < 300) to.inbox.push({ from: me.id, data: b.data });
+    return { ok: true };
+  },
+  signals(b) {
+    const room = getRoom(b.room); const me = auth(room, b.pid, b.token);
+    me.lastSeen = Date.now();
+    return { items: me.inbox.splice(0) };
+  },
   leaderboard() {
     const top = Object.values(db.users).filter(u => u.played > 0)
       .sort((a, b) => b.wins - a.wins || (b.wins / b.played) - (a.wins / a.played) || b.played - a.played)
@@ -347,6 +365,12 @@ const handlers = {
         if (!(isHost || !hostP || !hostP.connected) || room.phase !== 'end' || room.seriesOver) throw new HttpErr(403, 'Only the host can start the next round.');
         room.round++;
         beginPlacement(room);
+        break;
+      }
+      case 'voice': {
+        const on = !!b.on;
+        if (on !== me.voice) me.inbox = [];
+        me.voice = on; me.muted = on && !!b.muted;
         break;
       }
       case 'again': {
@@ -457,6 +481,9 @@ setInterval(() => {
 setInterval(() => {
   const now = Date.now();
   rooms.forEach((room, code) => {
+    room.players.forEach(p => {
+      if (p.voice && !p.bot && !p.connected && now - p.discAt > 8000) { p.voice = false; p.muted = false; p.inbox = []; broadcast(room); }
+    });
     room.players.forEach(p => {
       if (p.bot || !p.connected) return;
       const hasStream = [...room.streams].some(x => x.pid === p.id);

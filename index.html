@@ -33,7 +33,7 @@ html{min-height:100%;-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.4;
   background:radial-gradient(900px 420px at 0% -8%,var(--glow),transparent 70%),radial-gradient(700px 380px at 100% 0%,rgba(255,180,0,.10),transparent 70%),var(--bg);
   background-attachment:fixed}
-#app{max-width:560px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top,0px)) 14px calc(40px + env(safe-area-inset-bottom,0px))}
+#app{max-width:560px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top,0px)) 14px calc(96px + env(safe-area-inset-bottom,0px))}
 h1{font-size:40px;line-height:1.05;margin:0 0 6px;font-weight:800;letter-spacing:.01em}
 h2{font-size:19px;margin:0 0 10px;font-weight:800}
 p{margin:0 0 12px;color:var(--muted)}
@@ -133,9 +133,19 @@ details p{margin:6px 2px 0;font-size:14px}
 .next{font-size:60px;font-weight:800;line-height:1;color:var(--accent)}
 .win .word{justify-content:center;margin:12px 0 4px}
 .win .tile{width:50px;height:60px;font-size:32px}
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-weight:700;max-width:90%;display:none;z-index:20;text-align:center}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-weight:700;max-width:90%;display:none;z-index:20;text-align:center}
 #conn{position:sticky;top:0;z-index:5;background:var(--gold);color:var(--gold-ink);font-weight:800;text-align:center;padding:6px;border-radius:10px;margin-bottom:10px;display:none}
 #cf{position:fixed;inset:0;pointer-events:none;z-index:30}
+#dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:15;display:none;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:6px;box-shadow:0 8px 28px rgba(0,0,0,.28);max-width:calc(100% - 16px)}
+#dock button{padding:9px 14px;font-size:14px;border-radius:99px;white-space:nowrap}
+#dock .info{font-size:12px;color:var(--muted);font-weight:700;padding:0 8px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+#dock button.on{background:linear-gradient(180deg,#34d16a,#1fae52);color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+#dock button.off{background:linear-gradient(180deg,#ff7a8a,var(--cross));color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.mic{display:inline-flex;align-items:center;justify-content:center;margin-left:7px;vertical-align:middle;color:var(--muted);border-radius:50%}
+.mic svg{width:15px;height:15px}
+.mic.off{color:var(--cross)}
+.talking .mic{color:var(--ok);animation:pulse 1s infinite}
+.talking .nm{color:var(--ok)}
 a.btn{display:block;text-align:center;text-decoration:none;font-weight:800;border-radius:13px;padding:12px 18px;font-size:16px;color:#fff;background:linear-gradient(180deg,#34d16a,#1fae52);box-shadow:0 3px 0 rgba(0,0,0,.22)}
 a.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
 .lb .pl{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
@@ -151,6 +161,7 @@ a.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.22)}
 </head>
 <body>
 <div id="app"></div>
+<div id="dock" role="group" aria-label="Voice chat"></div>
 <div id="toast" role="alert"></div>
 <script>
 (function(){
@@ -272,7 +283,7 @@ function connect(){
   fallbackTimer=setTimeout(function(){if(!gotState)startPolling()},2000);
 }
 function leaveLocal(text){
-  stopLive();session=null;S=null;store('sisco-session',null);
+  stopVoice(true);stopLive();session=null;S=null;store('sisco-session',null);
   if(text)say(text);
   render();
 }
@@ -396,7 +407,7 @@ function renderLobby(){
     '<div class="row" style="justify-content:center"><a class="btn" id="wa" target="_blank" rel="noopener" style="flex:1;min-width:170px">Invite on WhatsApp</a><button class="ghost" id="copy">Copy link</button></div></div>';
   h+='<div class="panel plist"><h2>Players ('+S.players.length+' of 5)</h2>';
   S.players.forEach(function(p){
-    h+='<div class="pl"><div><span class="dot'+(p.connected?'':' off')+'"></span>'+esc(p.name)+(p.id===S.you?'<span class="badge">you</span>':'')+(p.id===S.hostId?'<span class="badge">host</span>':'')+(p.bot?'<span class="badge">computer '+esc(p.level||'')+'</span>':'')+'</div>';
+    h+='<div class="pl" data-pid="'+p.id+'"><div><span class="dot'+(p.connected?'':' off')+'"></span>'+esc(p.name)+voiceBadge(p)+(p.id===S.you?'<span class="badge">you</span>':'')+(p.id===S.hostId?'<span class="badge">host</span>':'')+(p.bot?'<span class="badge">computer '+esc(p.level||'')+'</span>':'')+'</div>';
     if(isHost()&&p.id!==S.you)h+='<button class="ghost small" data-rm="'+p.id+'">Remove</button>';
     h+='</div>';
   });
@@ -482,7 +493,7 @@ function scoreboard(){
   var h='<div class="panel"><h2>Progress</h2>';
   S.players.forEach(function(p){
     var c=Math.min(p.lines,5);
-    h+='<div class="score'+(p.id===S.turnId&&S.phase==='play'?' turn':'')+'"><div><div class="nm">'+esc(p.name)+(p.id===S.you?' (you)':'')+'</div><div class="tag">'+p.lines+' line'+(p.lines===1?'':'s')+(S.rounds>1?' | '+(S.scores[p.id]||0)+' round win'+((S.scores[p.id]||0)===1?'':'s'):'')+(p.bot?' | '+esc(p.level):'')+(p.connected?'':' | offline')+'</div></div><div class="word">';
+    h+='<div class="score'+(p.id===S.turnId&&S.phase==='play'?' turn':'')+'" data-pid="'+p.id+'"><div><div class="nm">'+esc(p.name)+(p.id===S.you?' (you)':'')+voiceBadge(p)+'</div><div class="tag">'+p.lines+' line'+(p.lines===1?'':'s')+(S.rounds>1?' | '+(S.scores[p.id]||0)+' round win'+((S.scores[p.id]||0)===1?'':'s'):'')+(p.bot?' | '+esc(p.level):'')+(p.connected?'':' | offline')+'</div></div><div class="word">';
     for(var k=0;k<5;k++){
       var f=S.fresh&&S.fresh[p.id];var isNew=f&&k>=f.from&&k<f.to;
       h+='<div class="tile'+(k<c?' on':'')+(isNew?' new':'')+'">'+LETTERS[k]+'</div>';
@@ -556,8 +567,192 @@ function renderEnd(){
   document.getElementById('leave').onclick=function(){act('leave').then(function(){leaveLocal()})};
 }
 
+/* ---------- voice chat (peer to peer, like a game lobby) ---------- */
+var voice={on:false,muted:false,deaf:false,stream:null,peers:{},timer:null,ice:null,ac:null,level:null,speaking:{},busy:false};
+window.siscoVoice=voice;
+function micSvg(off){
+  return off?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9v3a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.8"/><path d="M19 11a7 7 0 0 1-1.1 3.8M5 11a7 7 0 0 0 11.2 5.6M12 18v3"/><path d="M3 3l18 18"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+}
+function voiceBadge(p){return p.voice?'<span class="mic'+(p.muted?' off':'')+'" title="'+(p.muted?'Muted':'In voice chat')+'">'+micSvg(p.muted)+'</span>':''}
+function sendSignal(to,data){
+  if(!session)return;
+  post('signal',{room:session.room,pid:session.pid,token:session.token,to:to,data:data}).catch(function(){});
+}
+function audioCtx(){
+  if(!voice.ac){try{voice.ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(voice.ac&&voice.ac.state==='suspended')voice.ac.resume();
+  return voice.ac;
+}
+function watchLevel(id,stream){
+  var ctx=audioCtx();if(!ctx)return null;
+  try{
+    var src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();an.fftSize=512;src.connect(an);
+    return {an:an,buf:new Uint8Array(an.fftSize),src:src};
+  }catch(e){return null}
+}
+function levelTick(){
+  var ids=Object.keys(voice.level||{});
+  ids.forEach(function(id){
+    var l=voice.level[id];if(!l)return;
+    l.an.getByteTimeDomainData(l.buf);
+    var sum=0;for(var i=0;i<l.buf.length;i++){var v=(l.buf[i]-128)/128;sum+=v*v}
+    var rms=Math.sqrt(sum/l.buf.length),now=Date.now();
+    if(rms>0.02)l.last=now;
+    var talking=!!l.last&&now-l.last<450&&!(id===S.you&&voice.muted);
+    if(!!voice.speaking[id]!==talking){voice.speaking[id]=talking;applyTalking()}
+  });
+}
+function applyTalking(){
+  document.querySelectorAll('[data-pid]').forEach(function(el){
+    el.classList.toggle('talking',!!voice.speaking[el.dataset.pid]);
+  });
+  var names=S?S.players.filter(function(p){return voice.speaking[p.id]&&p.id!==S.you}).map(function(p){return p.name}):[];
+  var inf=document.getElementById('vinfo');
+  if(inf&&voice.on)inf.textContent=names.length?names[0]+' talking':connectedCount()+' in call';
+}
+function connectedCount(){
+  return Object.keys(voice.peers).filter(function(k){return voice.peers[k].pc.connectionState==='connected'}).length;
+}
+function peerName(id){var p=S&&S.players.filter(function(x){return x.id===id})[0];return p?p.name:'a player'}
+function createPeer(id,initiator){
+  var pc=new RTCPeerConnection({iceServers:(voice.ice&&voice.ice.iceServers)||[{urls:'stun:stun.l.google.com:19302'}]});
+  var peer={pc:pc,pending:[],audio:null,warned:false};
+  voice.peers[id]=peer;
+  voice.stream.getTracks().forEach(function(t){pc.addTrack(t,voice.stream)});
+  pc.onicecandidate=function(e){if(e.candidate)sendSignal(id,{ice:e.candidate})};
+  pc.ontrack=function(e){
+    var stream=e.streams[0];
+    if(!peer.audio){
+      var a=document.createElement('audio');a.autoplay=true;a.setAttribute('playsinline','');a.muted=voice.deaf;
+      document.body.appendChild(a);peer.audio=a;
+    }
+    peer.audio.srcObject=stream;
+    var p=peer.audio.play();if(p&&p.catch)p.catch(function(){});
+    voice.level=voice.level||{};
+    if(!voice.level[id])voice.level[id]=watchLevel(id,stream);
+  };
+  pc.onconnectionstatechange=function(){
+    if(pc.connectionState==='failed'&&!peer.warned){peer.warned=true;say('Could not connect voice with '+peerName(id)+'. Their network may be blocking it.')}
+    updateDock();applyTalking();
+  };
+  if(initiator){
+    pc.createOffer().then(function(o){return pc.setLocalDescription(o)}).then(function(){sendSignal(id,{sdp:pc.localDescription})}).catch(function(){});
+  }
+  return peer;
+}
+function closePeer(id){
+  var p=voice.peers[id];if(!p)return;
+  try{p.pc.close()}catch(e){}
+  if(p.audio){p.audio.srcObject=null;p.audio.remove()}
+  delete voice.peers[id];
+  if(voice.level&&voice.level[id]){try{voice.level[id].src.disconnect()}catch(e){}delete voice.level[id]}
+  delete voice.speaking[id];
+}
+function syncPeers(){
+  if(!voice.on||!S)return;
+  var want={};
+  S.players.forEach(function(p){if(p.id!==S.you&&p.voice&&!p.bot)want[p.id]=true});
+  Object.keys(voice.peers).forEach(function(id){if(!want[id])closePeer(id)});
+  Object.keys(want).forEach(function(id){
+    if(!voice.peers[id])createPeer(id,S.you<id);
+  });
+}
+function handleSignal(m){
+  if(!voice.on)return;
+  var id=m.from,d=m.data||{};
+  if(d.sdp&&d.sdp.type==='offer'){
+    var ex=voice.peers[id];
+    if(ex&&['failed','closed','disconnected'].indexOf(ex.pc.connectionState)>-1){closePeer(id);ex=null}
+    var peer=ex||createPeer(id,false);
+    var pc=peer.pc;
+    pc.setRemoteDescription(d.sdp).then(function(){
+      peer.pending.splice(0).forEach(function(c){pc.addIceCandidate(c).catch(function(){})});
+      return pc.createAnswer();
+    }).then(function(a){return pc.setLocalDescription(a)}).then(function(){sendSignal(id,{sdp:pc.localDescription})}).catch(function(){});
+  }else if(d.sdp&&d.sdp.type==='answer'){
+    var p2=voice.peers[id];if(!p2)return;
+    p2.pc.setRemoteDescription(d.sdp).then(function(){
+      p2.pending.splice(0).forEach(function(c){p2.pc.addIceCandidate(c).catch(function(){})});
+    }).catch(function(){});
+  }else if(d.ice){
+    var p3=voice.peers[id];if(!p3)return;
+    if(p3.pc.remoteDescription)p3.pc.addIceCandidate(d.ice).catch(function(){});else p3.pending.push(d.ice);
+  }
+}
+function pollSignals(){
+  if(!voice.on||!session)return;
+  post('signals',{room:session.room,pid:session.pid,token:session.token}).then(function(d){
+    (d.items||[]).forEach(handleSignal);
+  }).catch(function(){});
+}
+function joinVoice(){
+  if(voice.on||voice.busy||!session)return;
+  if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.RTCPeerConnection){
+    say('Voice needs the secure https link (not a 192.168 address) and a modern browser.');return;
+  }
+  voice.busy=true;updateDock();
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false}).then(function(stream){
+    voice.stream=stream;audioCtx();
+    return post('ice',{}).catch(function(){return {iceServers:[{urls:'stun:stun.l.google.com:19302'}]}});
+  }).then(function(ice){
+    voice.ice=ice;voice.on=true;voice.muted=false;voice.deaf=false;voice.busy=false;
+    voice.level={};voice.level[S.you]=watchLevel(S.you,voice.stream);
+    return act('voice',{on:true,muted:false});
+  }).then(function(){
+    clearInterval(voice.timer);clearInterval(voice.lt);voice.timer=setInterval(pollSignals,500);voice.lt=setInterval(levelTick,120);
+    syncPeers();updateDock();
+  }).catch(function(e){
+    voice.busy=false;
+    if(voice.stream){voice.stream.getTracks().forEach(function(t){t.stop()});voice.stream=null}
+    say(e&&e.name==='NotAllowedError'?'Microphone blocked. Allow the microphone for this site and try again.':'Could not start voice chat.');
+    updateDock();
+  });
+}
+function stopVoice(tellServer){
+  if(!voice.on&&!voice.stream)return;
+  clearInterval(voice.timer);clearInterval(voice.lt);voice.timer=null;
+  Object.keys(voice.peers).forEach(closePeer);
+  if(voice.stream){voice.stream.getTracks().forEach(function(t){t.stop()});voice.stream=null}
+  if(voice.level)Object.keys(voice.level).forEach(function(k){try{voice.level[k]&&voice.level[k].src.disconnect()}catch(e){}});
+  voice.level=null;voice.speaking={};voice.on=false;voice.muted=false;voice.deaf=false;
+  if(tellServer&&session)post('action',{room:session.room,pid:session.pid,token:session.token,type:'voice',on:false}).catch(function(){});
+  updateDock();applyTalking();
+}
+function toggleMute(){
+  if(!voice.on)return;
+  voice.muted=!voice.muted;
+  voice.stream.getAudioTracks().forEach(function(t){t.enabled=!voice.muted});
+  if(voice.muted){voice.speaking[S.you]=false;applyTalking()}
+  act('voice',{on:true,muted:voice.muted});updateDock();
+}
+function toggleSpeaker(){
+  voice.deaf=!voice.deaf;
+  Object.keys(voice.peers).forEach(function(k){if(voice.peers[k].audio)voice.peers[k].audio.muted=voice.deaf});
+  updateDock();
+}
+function updateDock(){
+  var d=document.getElementById('dock');if(!d)return;
+  if(!session||!S){d.style.display='none';return}
+  d.style.display='flex';
+  if(!voice.on){
+    d.innerHTML='<button class="gold" id="vjoin"'+(voice.busy?' disabled':'')+'>'+(voice.busy?'Starting microphone...':'Join voice chat')+'</button>';
+    document.getElementById('vjoin').onclick=joinVoice;
+    return;
+  }
+  d.innerHTML='<button id="vmute" class="'+(voice.muted?'off':'on')+'" aria-pressed="'+voice.muted+'">'+(voice.muted?'Mic off':'Mic on')+'</button>'+
+    '<button id="vspk" class="'+(voice.deaf?'off':'on')+'" aria-pressed="'+voice.deaf+'">'+(voice.deaf?'Speaker off':'Speaker on')+'</button>'+
+    '<span class="info" id="vinfo">'+connectedCount()+' in call</span><button class="ghost" id="vleave">Leave</button>';
+  document.getElementById('vmute').onclick=toggleMute;
+  document.getElementById('vspk').onclick=toggleSpeaker;
+  document.getElementById('vleave').onclick=function(){stopVoice(true)};
+}
+
 /* ---------- router ---------- */
 function render(){
+  renderMain();updateDock();applyTalking();if(voice.on)syncPeers();
+}
+function renderMain(){
   var cf=document.getElementById('cf');if(cf&&(!S||S.phase!=='end'))cf.remove();
   if(!auth){renderWelcome();return}
   if(!session){renderMenu();return}
