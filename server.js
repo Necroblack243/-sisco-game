@@ -90,7 +90,7 @@ const lineCount = p => LINES.filter(l => l.every(i => p.crossed[i])).length;
 const cleanName = s => String(s || '').replace(/[<>&"']/g, '').trim().slice(0, 14);
 
 function makePlayer(name, bot, level, userKey) {
-  return { id: rid(4), token: rid(16), name, bot: !!bot, level: bot ? (level || 'medium') : null, userKey: userKey || null, board: null, crossed: new Array(25).fill(false), ready: false, connected: false, discAt: 0, voice: false, muted: false, inbox: [] };
+  return { id: rid(4), token: rid(16), name, bot: !!bot, level: bot ? (level || 'medium') : null, userKey: userKey || null, board: null, crossed: new Array(25).fill(false), ready: false, connected: false, discAt: 0, voice: false, listen: false, muted: false, inbox: [], lastChat: 0 };
 }
 function uniqueName(room, base) {
   let name = base || 'Player', n = 2;
@@ -103,9 +103,9 @@ function view(room, pid) {
   const me = room.players.find(p => p.id === pid);
   const cur = room.players[room.turn];
   return {
-    code: room.code, v: room.version || 0, rounds: room.rounds, round: room.round, scores: room.scores, seriesOver: room.seriesOver, champions: room.champions, phase: room.phase, hostId: room.hostId, you: pid,
+    code: room.code, chat: room.chat.slice(-60), v: room.version || 0, rounds: room.rounds, round: room.round, scores: room.scores, seriesOver: room.seriesOver, champions: room.champions, phase: room.phase, hostId: room.hostId, you: pid,
     turn: room.turn, turnId: cur ? cur.id : null,
-    players: room.players.map(p => ({ id: p.id, name: p.name, bot: p.bot, level: p.level, member: !!p.userKey, voice: !!p.voice, muted: !!p.muted, connected: p.bot || p.connected, ready: p.ready, lines: lineCount(p) })),
+    players: room.players.map(p => ({ id: p.id, name: p.name, bot: p.bot, level: p.level, member: !!p.userKey, voice: !!p.voice, listen: !!p.listen, muted: !!p.muted, connected: p.bot || p.connected, ready: p.ready, lines: lineCount(p) })),
     board: me ? me.board : null, crossed: me ? me.crossed : null,
     called: room.called, last: room.last, lastBy: room.lastBy, notes: room.notes,
     winners: room.winners, fresh: room.fresh
@@ -216,11 +216,31 @@ function who(b) {
 }
 function makeRoom(b) {
   const w = who(b);
-  const room = { code: newCode(), rounds: 1, round: 1, scores: {}, seriesOver: false, champions: [], phase: 'lobby', players: [], hostId: null, turn: 0, called: [], last: null, lastBy: null, notes: [], winners: [], fresh: {}, streams: new Set(), botTimer: null, updated: Date.now() };
+  const room = { code: newCode(), chat: [], chatSeq: 0, rounds: 1, round: 1, scores: {}, seriesOver: false, champions: [], phase: 'lobby', players: [], hostId: null, turn: 0, called: [], last: null, lastBy: null, notes: [], winners: [], fresh: {}, streams: new Set(), botTimer: null, updated: Date.now() };
   const host = makePlayer(uniqueName(room, w.name || 'Host'), false, null, w.key);
   room.players.push(host); room.hostId = host.id;
   rooms.set(room.code, room);
   return { room, host };
+}
+
+let cfCache = { at: 0, servers: null };
+async function cloudflareTurn() {
+  const id = process.env.CF_TURN_KEY_ID, token = process.env.CF_TURN_API_TOKEN;
+  if (!id || !token) return null;
+  if (cfCache.servers && Date.now() - cfCache.at < 3600 * 1000) return cfCache.servers;
+  try {
+    const base = process.env.CF_TURN_BASE || 'https://rtc.live.cloudflare.com';
+    const r = await fetch(base + '/v1/turn/keys/' + encodeURIComponent(id) + '/credentials/generate-ice-servers', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ ttl: 86400 })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    let list = d.iceServers; list = Array.isArray(list) ? list : (list ? [list] : []);
+    list = list.filter(x => x && x.urls && x.username && x.credential);
+    if (!list.length) throw new Error('no TURN servers in reply');
+    cfCache = { at: Date.now(), servers: list };
+    return list;
+  } catch (e) { console.error('Cloudflare TURN request failed:', e.message); return cfCache.servers; }
 }
 
 const handlers = {
@@ -255,11 +275,14 @@ const handlers = {
     if (b.v === room.version) return { same: true };
     return view(room, p.id);
   },
-  ice() {
+  async ice() {
     const servers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+    let relay = false;
     const turn = (process.env.TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
-    if (turn.length) servers.push({ urls: turn, username: process.env.TURN_USERNAME || '', credential: process.env.TURN_CREDENTIAL || '' });
-    return { iceServers: servers };
+    if (turn.length) { servers.push({ urls: turn, username: process.env.TURN_USERNAME || '', credential: process.env.TURN_CREDENTIAL || '' }); relay = true; }
+    const cf = await cloudflareTurn();
+    if (cf) { cf.forEach(x => servers.push(x)); relay = true; }
+    return { iceServers: servers, relay };
   },
   signal(b) {
     const room = getRoom(b.room); const me = auth(room, b.pid, b.token);
@@ -370,7 +393,17 @@ const handlers = {
       case 'voice': {
         const on = !!b.on;
         if (on !== me.voice) me.inbox = [];
-        me.voice = on; me.muted = on && !!b.muted;
+        me.voice = on; me.listen = on && !!b.listen; me.muted = on && !me.listen && !!b.muted;
+        break;
+      }
+      case 'chat': {
+        const text = String(b.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 200);
+        if (!text) throw new HttpErr(400, 'Type a message first.');
+        const now = Date.now();
+        if (now - me.lastChat < 600) throw new HttpErr(429, 'Slow down a little.');
+        me.lastChat = now;
+        room.chat.push({ id: ++room.chatSeq, pid: me.id, name: me.name, text });
+        if (room.chat.length > 100) room.chat.splice(0, room.chat.length - 100);
         break;
       }
       case 'again': {
@@ -466,7 +499,7 @@ const server = http.createServer(async (req, res) => {
       const name = url.pathname.slice(5);
       if (!handlers[name]) throw new HttpErr(404, 'Not found');
       const body = await readJson(req);
-      return json(res, 200, handlers[name](body, { ip: req.socket.remoteAddress || 'x' }));
+      return json(res, 200, await handlers[name](body, { ip: req.socket.remoteAddress || 'x' }));
     }
     res.writeHead(404); res.end('Not found');
   } catch (e) {

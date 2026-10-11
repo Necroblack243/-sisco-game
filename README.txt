@@ -6,7 +6,10 @@ WHAT IS INSIDE
 - Rooms with a 4-letter code so friends can join from anywhere
 - Matches of 1 to 10 rounds (host chooses) with a running score and a match champion
 - One-tap WhatsApp invite
-- Voice chat inside the room (Join voice chat button): mic on/off, speaker on/off, glow around who is talking
+- Voice chat inside the room (Join voice chat button): mic on/off, speaker on/off, glow around who is talking,
+  plus Listen only for people whose phone will not allow the microphone
+- Text chat in the lobby, and a chat button during games, with quick replies (GG, Ready?, ...)
+- Animations: bouncing number ball on every call, letter pop when you unlock S-I-S-C-O, wave across finished lines
 - Installable as an app on Android and Windows (see below)
 - For a permanent online link, read DEPLOY-ONLINE.txt
 
@@ -46,8 +49,11 @@ VOICE CHAT
   It will not work on a plain http://192.168... address (browsers block the microphone there).
 - Everyone taps Join voice chat and allows the microphone when the browser asks.
 - Voice goes straight between players' devices (about 100 MB per hour per phone with 5 people).
-  Some mobile networks block this. If someone cannot connect, set up a free TURN relay and add these
-  environment variables on the server (Render > Environment, or set them before running node server.js):
+  Some mobile networks block this. The fix is a relay (TURN) server. Easiest option, Cloudflare (has a free allowance,
+  check their site for the current amount): see Part D in DEPLOY-ONLINE.txt. Any other TURN provider also works with:
     TURN_URLS        e.g. turn:your-turn-server:3478,turns:your-turn-server:443?transport=tcp
     TURN_USERNAME    (given by the TURN provider)
     TURN_CREDENTIAL  (given by the TURN provider)
+
+ANDROID NOTE: if a phone says "This site can't ask for your permission", close floating bubbles/overlays
+(Snapchat, Messenger, screen recorders) and try again, or use Listen only.

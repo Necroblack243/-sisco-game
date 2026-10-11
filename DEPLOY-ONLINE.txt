@@ -36,3 +36,15 @@ Free hosts wipe saved files when they restart, so accounts would disappear. A fr
      UPSTASH_REDIS_REST_URL     = (the URL you copied)
      UPSTASH_REDIS_REST_TOKEN   = (the token you copied)
 4. Save. Render restarts the service. In its Logs you should see: "Accounts are stored in cloud storage."
+
+PART D (optional) - Make voice chat work on networks that block it (free relay from Cloudflare)
+Some phone networks stop players from talking directly to each other. A relay server passes the audio along instead.
+1. Create a free account at dash.cloudflare.com.
+2. In the dashboard open Realtime, then TURN Server, and create a TURN key/app. Copy the Turn Key ID and the API Token
+   (the token is shown only once, so copy it straight away).
+3. In Render open your service > Environment and add:
+     CF_TURN_KEY_ID      = (the Turn Key ID)
+     CF_TURN_API_TOKEN   = (the API Token)
+4. Save. Render restarts the game. Voice will now use the relay automatically whenever a direct connection fails.
+Screens change over time, so a name may look a little different. Cloudflare's TURN service has a free allowance;
+check their pricing page for the current limit before heavy use.
